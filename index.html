@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azhar Service - Digital Bill & Dynamic Warranty Card</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableCard, #printableCard * {
+                visibility: visible;
+            }
+            #printableCard {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none !important;
+                border: 1px solid #ddd;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        .pulse-live {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.98);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.98);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-xl no-print">
+        <div class="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-3 rounded-xl shadow-lg">
+                    <i class="fa-solid font-bold fa-screwdriver-wrench text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold tracking-wide uppercase">AZHAR SERVICE</h1>
+                    <p class="text-xs text-blue-200 font-medium">Home Appliances Repair, Maintenance & Warranty Management</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="bg-blue-800/60 border border-blue-500/30 text-xs px-3 py-1.5 rounded-full flex items-center gap-2 text-blue-100">
+                    <i class="fa-solid fa-phone text-emerald-400"></i> Support: +91 7003248219
+                </span>
+                <button onclick="switchTab('create')" id="navCreateBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow">
+                    <i class="fa-solid fa-plus-circle mr-1"></i> New Bill / Warranty
+                </button>
+                <button onclick="switchTab('tracker')" id="navTrackerBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700">
+                    <i class="fa-solid fa-boxes-packing mr-1"></i> Warranty Records
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+
+        <!-- Notification Banner -->
+        <div id="toast" class="hidden fixed top-5 right-5 z-50 bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center space-x-3 transition transform duration-300">
+            <i class="fa-solid fa-circle-check text-xl"></i>
+            <span id="toastMsg" class="font-medium text-sm">Action completed successfully!</span>
+        </div>
+
+        <!-- TAB 1: FORM & GENERATED CARD VIEW -->
+        <div id="createTab" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Form Section -->
+            <div class="lg:col-span-5 bg-white rounded-2xl shadow-md p-6 border border-slate-200 no-print">
+                <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-blue-600"></i>
+                        New Invoice & Warranty
+                    </h2>
+                    <span class="text-xs bg-blue-100 text-blue-800 font-semibold px-2.5 py-1 rounded-full">Automated</span>
+                </div>
+
+                <form id="serviceForm" class="space-y-4">
+                    <!-- Customer Information -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Customer Name (গ্রাহকের নাম) *</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400 text-sm"></i>
+                            <input type="text" id="custName" required placeholder="e.g. Rahul Banerjee" class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">WhatsApp Mobile No. (মোবাইল নম্বর) *</label>
+                        <div class="relative">
+                            <i class="fa-brands fa-whatsapp absolute left-3 top-3 text-slate-400 text-sm"></i>
+                            <input type="tel" id="custPhone" required placeholder="e.g. 7003248219" class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Appliance & Service details -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Appliance Type *</label>
+                            <select id="applianceType" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                                <option value="">Select Appliance</option>
+                                <option value="AC (Air Conditioner)">AC (Air Conditioner)</option>
+                                <option value="Refrigerator / Fridge">Refrigerator / Fridge</option>
+                                <option value="Washing Machine">Washing Machine</option>
+                                <option value="Microwave Oven">Microwave Oven</option>
+                                <option value="Water Purifier (RO)">Water Purifier (RO)</option>
+                                <option value="Geyser / Water Heater">Geyser / Water Heater</option>
+                                <option value="Kitchen Chimney">Kitchen Chimney</option>
+                                <option value="Other Appliance">Other Appliance</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Model / Serial No.</label>
+                            <input type="text" id="modelNo" placeholder="Optional (e.g. LG-1.5T)" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Service Work Description (কাজের বিবরণ) *</label>
+                        <textarea id="serviceDesc" rows="2" required placeholder="e.g. Gas Charging, PCB Repair, Cleaning" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none"></textarea>
+                    </div>
+
+                    <!-- Financial & Warranty details -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Service Amount (₹) *</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-slate-500 font-bold text-sm">₹</span>
+                                <input type="number" id="serviceCost" min="0" required placeholder="1500" class="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-semibold">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Warranty Start Date *</label>
+                            <input type="date" id="startDate" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-semibold text-slate-700">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Warranty Period *</label>
+                            <select id="warrantyDays" required class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-semibold text-blue-700">
+                                <option value="30">30 Days Warranty</option>
+                                <option value="60">60 Days Warranty</option>
+                                <option value="90" selected>90 Days (3 Months)</option>
+                                <option value="180">180 Days (6 Months)</option>
+                                <option value="365">365 Days (1 Year)</option>
+                                <option value="0">No Warranty</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Technician / Serviced By</label>
+                        <input type="text" id="techName" placeholder="e.g. Azharuddin / Self" value="Azharuddin" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="pt-2 flex gap-3">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg shadow-md transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Invoice & Card
+                        </button>
+                        <button type="button" onclick="resetForm()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-semibold transition">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Digital Invoice & Warranty Card Preview Section -->
+            <div class="lg:col-span-7 flex flex-col items-center">
+                
+                <!-- Action bar above card -->
+                <div class="w-full mb-4 flex justify-between items-center no-print bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <i class="fa-solid fa-eye text-blue-600 mr-1"></i> Live Card Preview
+                    </span>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="sendWhatsAppMessage()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Send WhatsApp
+                        </button>
+                        <button type="button" onclick="printWarrantyCard()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
+                            <i class="fa-solid fa-print"></i> Print / Save PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- THE DIGITAL BILL & WARRANTY CARD CONTENT -->
+                <div id="printableCard" class="w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-300 relative transition-all">
+                    
+                    <!-- Card Top Header -->
+                    <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-6 relative overflow-hidden">
+                        <!-- Decorative background circle -->
+                        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-blue-600/20 rounded-full blur-xl pointer-events-none"></div>
+                        
+                        <div class="flex justify-between items-start relative z-10">
+                            <div>
+                                <div class="inline-block bg-blue-500/20 text-blue-300 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border border-blue-400/30 mb-2">
+                                    Official Service Bill & Warranty
+                                </div>
+                                <h3 class="text-2xl font-black tracking-wide text-white">AZHAR SERVICE</h3>
+                                <p class="text-xs text-slate-300 font-light mt-0.5">Reliable Repairs & Professional Support</p>
+                            </div>
+                            <div class="text-right">
+                                <div id="cardSerialNo" class="text-lg font-mono font-bold text-amber-400 tracking-wider">AS-2026-0000</div>
+                                <div id="cardDate" class="text-xs text-slate-300 mt-1">Date: --/--/----</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer & Job Info Grid -->
+                    <div class="p-6 bg-slate-50/50 border-b border-slate-200">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-xs uppercase font-semibold text-slate-400 block mb-0.5">Customer Name</span>
+                                <span id="cardCustName" class="font-bold text-slate-800 text-base">John Doe</span>
+                                <div id="cardCustPhone" class="text-xs text-slate-600 font-mono mt-0.5">+91 0000000000</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs uppercase font-semibold text-slate-400 block mb-0.5">Appliance Details</span>
+                                <span id="cardAppliance" class="font-bold text-slate-800">AC (Air Conditioner)</span>
+                                <div id="cardModel" class="text-xs text-slate-500 mt-0.5">Model: N/A</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Work Details Table -->
+                    <div class="p-6">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-xs font-semibold uppercase text-slate-400">
+                                    <th class="pb-2">Description of Work</th>
+                                    <th class="pb-2 text-right">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="py-3">
+                                        <p id="cardWorkDesc" class="font-medium text-slate-800">General Service & Inspection</p>
+                                        <p class="text-xs text-slate-400 mt-0.5">Technician: <span id="cardTech" class="text-slate-600 font-medium">Azharuddin</span></p>
+                                    </td>
+                                    <td class="py-3 text-right font-mono font-bold text-slate-900 text-base" id="cardAmount">
+                                        ₹0.00
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- LIVE DYNAMIC WARRANTY COUNTDOWN BOX -->
+                    <div class="mx-6 mb-6 p-4 rounded-xl bg-gradient-to-br from-slate-900 to-indigo-950 text-white shadow-inner relative overflow-hidden">
+                        
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-shield-halved text-amber-400 text-lg"></i>
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Digital Live Warranty Tracker</span>
+                            </div>
+                            <span id="warrantyStatusBadge" class="px-2.5 py-0.5 text-xs font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                Active
+                            </span>
+                        </div>
+
+                        <!-- Live Countdown Timer UI -->
+                        <div id="countdownBox" class="grid grid-cols-4 gap-2 text-center py-2 bg-slate-800/60 rounded-lg border border-slate-700/50 mb-3">
+                            <div>
+                                <span id="timerDays" class="block text-xl font-black text-amber-400 font-mono">00</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold">Days</span>
+                            </div>
+                            <div>
+                                <span id="timerHours" class="block text-xl font-black text-slate-100 font-mono">00</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold">Hours</span>
+                            </div>
+                            <div>
+                                <span id="timerMinutes" class="block text-xl font-black text-slate-100 font-mono">00</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold">Mins</span>
+                            </div>
+                            <div>
+                                <span id="timerSeconds" class="block text-xl font-black text-slate-100 font-mono">00</span>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold">Secs</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-xs text-slate-300">
+                            <div>Valid From: <span id="cardValidFrom" class="font-mono text-slate-100">--/--/----</span></div>
+                            <div>Valid Until: <span id="cardValidUntil" class="font-mono text-amber-300 font-semibold">--/--/----</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Terms & Footer -->
+                    <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
+                        <div>
+                            <p class="font-medium text-slate-600">Terms & Conditions:</p>
+                            <p class="text-[11px] leading-tight">Warranty covers repair/part faults mentioned above. Physical or water damage is excluded.</p>
+                        </div>
+                        <div class="text-center sm:text-right shrink-0">
+                            <div class="font-bold text-slate-700 uppercase tracking-wide">Azhar Service Authorized Stamp</div>
+                            <div class="text-[10px] text-emerald-600 font-semibold mt-0.5"><i class="fa-solid fa-circle-check"></i> Digitally Verified</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: RECORDS & SEARCH TRACKER VIEW -->
+        <div id="trackerTab" class="hidden space-y-6">
+            
+            <!-- Search Header & Backup Actions -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">All Saved Bills & Warranties</h2>
+                    <p class="text-xs text-slate-500">Search customer records or export backup data anytime</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <div class="w-full sm:w-64 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" oninput="renderRecordsTable()" placeholder="Search (ID, Name, Phone)..." class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="exportData()" title="Backup Data" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition w-full sm:w-auto">
+                            <i class="fa-solid fa-download"></i> Backup
+                        </button>
+                        <button onclick="document.getElementById('importFileInput').click()" title="Restore Data" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition w-full sm:w-auto">
+                            <i class="fa-solid fa-upload"></i> Restore
+                        </button>
+                        <input type="file" id="importFileInput" onchange="importData(event)" class="hidden" accept=".json">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table list -->
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500">
+                            <tr>
+                                <th class="p-4">Serial ID</th>
+                                <th class="p-4">Customer</th>
+                                <th class="p-4">Appliance</th>
+                                <th class="p-4">Amount</th>
+                                <th class="p-4">Warranty Expire</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTableBody" class="divide-y divide-slate-100">
+                            <!-- Dynamic Content Inserted JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden p-8 text-center text-slate-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-2 text-slate-300"></i>
+                    <p class="text-sm">No saved bills or records found.</p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Global State & Data Store
+        let records = [];
+        try {
+            records = JSON.parse(localStorage.getItem('azhar_service_records')) || [];
+        } catch(e) {
+            records = [];
+        }
+        let currentRecord = null;
+        let countdownInterval = null;
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            // Set default Warranty Start Date to Today (YYYY-MM-DD)
+            const todayStr = new Date().toISOString().split('T')[0];
+            const startDateInput = document.getElementById('startDate');
+            if (startDateInput) startDateInput.value = todayStr;
+
+            if (records && records.length > 0) {
+                loadRecordIntoCard(records[0]);
+            } else {
+                createSamplePreview();
+            }
+            renderRecordsTable();
+        };
+
+        // Form Submission Handler
+        document.getElementById('serviceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const appliance = document.getElementById('applianceType').value;
+            const model = document.getElementById('modelNo').value.trim();
+            const desc = document.getElementById('serviceDesc').value.trim();
+            const cost = parseFloat(document.getElementById('serviceCost').value) || 0;
+            const startDateVal = document.getElementById('startDate').value;
+            const warrantyDays = parseInt(document.getElementById('warrantyDays').value);
+            const tech = document.getElementById('techName').value.trim() || 'Azharuddin';
+
+            // Calculate start date and expiry date based on user selection
+            const startDateObj = startDateVal ? new Date(startDateVal + 'T00:00:00') : new Date();
+            const expiryDateObj = new Date(startDateObj.getTime() + (warrantyDays * 24 * 60 * 60 * 1000));
+            
+            // Unique ID Generation: AS-YYYY-XXXX
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            const serialNo = `AS-${startDateObj.getFullYear()}-${randomNum}`;
+
+            const newRecord = {
+                id: serialNo,
+                custName: name,
+                custPhone: phone,
+                appliance: appliance,
+                model: model || 'N/A',
+                serviceDesc: desc,
+                cost: cost,
+                warrantyDays: warrantyDays,
+                tech: tech,
+                issueDateIso: startDateObj.toISOString(),
+                expiryDateIso: expiryDateObj.toISOString()
+            };
+
+            // Save to LocalStorage array (unshift to add top)
+            records.unshift(newRecord);
+            localStorage.setItem('azhar_service_records', JSON.stringify(records));
+
+            // Load into view
+            loadRecordIntoCard(newRecord);
+            renderRecordsTable();
+
+            // Show Toast Notification
+            showToast('Bill & Dynamic Warranty Generated Successfully!');
+        });
+
+        // Load Record details into Card Preview & Start Live Countdown
+        function loadRecordIntoCard(record) {
+            currentRecord = record;
+
+            document.getElementById('cardSerialNo').innerText = record.id;
+            const issueDateObj = new Date(record.issueDateIso);
+            document.getElementById('cardDate').innerText = 'Date: ' + formatDate(issueDateObj);
+
+            document.getElementById('cardCustName').innerText = record.custName;
+            document.getElementById('cardCustPhone').innerText = '+91 ' + record.custPhone;
+            document.getElementById('cardAppliance').innerText = record.appliance;
+            document.getElementById('cardModel').innerText = 'Model: ' + (record.model || 'N/A');
+            document.getElementById('cardWorkDesc').innerText = record.serviceDesc;
+            document.getElementById('cardTech').innerText = record.tech;
+            document.getElementById('cardAmount').innerText = '₹' + record.cost.toLocaleString('en-IN', {minimumFractionDigits: 2});
+
+            document.getElementById('cardValidFrom').innerText = formatDate(issueDateObj);
+            
+            const expiryDateObj = new Date(record.expiryDateIso);
+            document.getElementById('cardValidUntil').innerText = record.warrantyDays > 0 ? formatDate(expiryDateObj) : 'No Warranty';
+
+            // Start Live Timer
+            startWarrantyTimer(record.expiryDateIso, record.warrantyDays);
+        }
+
+        // Live Countdown Clock Logic
+        function startWarrantyTimer(expiryIso, warrantyDays) {
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            const badge = document.getElementById('warrantyStatusBadge');
+            const daysEl = document.getElementById('timerDays');
+            const hoursEl = document.getElementById('timerHours');
+            const minsEl = document.getElementById('timerMinutes');
+            const secsEl = document.getElementById('timerSeconds');
+
+            if (warrantyDays <= 0) {
+                badge.innerText = 'NO WARRANTY';
+                badge.className = 'px-2.5 py-0.5 text-xs font-extrabold uppercase rounded-full bg-slate-700 text-slate-300 border border-slate-600';
+                daysEl.innerText = '00';
+                hoursEl.innerText = '00';
+                minsEl.innerText = '00';
+                secsEl.innerText = '00';
+                return;
+            }
+
+            const expiryTime = new Date(expiryIso).getTime();
+
+            function updateClock() {
+                const now = new Date().getTime();
+                const distance = expiryTime - now;
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    badge.innerText = 'EXPIRED';
+                    badge.className = 'px-2.5 py-0.5 text-xs font-extrabold uppercase rounded-full bg-red-500/20 text-red-400 border border-red-500/40';
+                    daysEl.innerText = '00';
+                    hoursEl.innerText = '00';
+                    minsEl.innerText = '00';
+                    secsEl.innerText = '00';
+                    return;
+                }
+
+                // Active Warranty Status
+                badge.innerText = 'ACTIVE';
+                badge.className = 'px-2.5 py-0.5 text-xs font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 pulse-live';
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                daysEl.innerText = String(days).padStart(2, '0');
+                hoursEl.innerText = String(hours).padStart(2, '0');
+                minsEl.innerText = String(minutes).padStart(2, '0');
+                secsEl.innerText = String(seconds).padStart(2, '0');
+            }
+
+            updateClock();
+            countdownInterval = setInterval(updateClock, 1000);
+        }
+
+        // WhatsApp Direct Dispatch Handler
+        function sendWhatsAppMessage() {
+            if (!currentRecord) {
+                showToast('Please select or generate a bill first!');
+                return;
+            }
+
+            let phone = currentRecord.custPhone.replace(/\D/g, '');
+            if (!phone) {
+                showToast('No phone number available!');
+                return;
+            }
+            if (phone.length === 10) {
+                phone = '91' + phone;
+            }
+
+            const expiryStr = currentRecord.warrantyDays > 0 
+                ? formatDate(new Date(currentRecord.expiryDateIso))
+                : 'No Warranty';
+
+            const message = 
+`*AZHAR SERVICE - Digital Invoice & Warranty Card* 🛠️
+-----------------------------------------
+📋 *Bill Serial No:* ${currentRecord.id}
+👤 *Customer:* ${currentRecord.custName}
+📱 *Appliance:* ${currentRecord.appliance} (${currentRecord.model})
+🛠️ *Service Done:* ${currentRecord.serviceDesc}
+💰 *Total Bill:* ₹${currentRecord.cost}
+-----------------------------------------
+🛡️ *Warranty Duration:* ${currentRecord.warrantyDays} Days
+📅 *Warranty Valid Until:* ${expiryStr}
+👨‍🔧 *Technician:* ${currentRecord.tech}
+📞 *Support Helpline:* +91 7003248219
+-----------------------------------------
+Thank you for choosing *Azhar Service*!
+For support, call us anytime at +91 7003248219.`;
+
+            const encodedMsg = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodedMsg}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // Print Functionality
+        function printWarrantyCard() {
+            if (!currentRecord) {
+                showToast('No warranty card loaded to print.');
+                return;
+            }
+            window.print();
+        }
+
+        // Render Searchable Table Records
+        function renderRecordsTable() {
+            const tbody = document.getElementById('recordsTableBody');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            const filtered = records.filter(r => 
+                r.id.toLowerCase().includes(searchVal) ||
+                r.custName.toLowerCase().includes(searchVal) ||
+                r.custPhone.toLowerCase().includes(searchVal) ||
+                r.appliance.toLowerCase().includes(searchVal)
+            );
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(r => {
+                const isExpired = new Date().getTime() > new Date(r.expiryDateIso).getTime();
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition';
+                
+                tr.innerHTML = `
+                    <td class="p-4 font-mono font-bold text-blue-700">${r.id}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800">${escapeHtml(r.custName)}</div>
+                        <div class="text-xs text-slate-500 font-mono">+91 ${escapeHtml(r.custPhone)}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="font-medium text-slate-700">${escapeHtml(r.appliance)}</span>
+                    </td>
+                    <td class="p-4 font-mono font-bold text-slate-900">₹${r.cost}</td>
+                    <td class="p-4 text-xs font-mono text-slate-600">
+                        ${r.warrantyDays > 0 ? formatDate(new Date(r.expiryDateIso)) : 'None'}
+                    </td>
+                    <td class="p-4">
+                        ${r.warrantyDays <= 0 ? 
+                            '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600">NO WARRANTY</span>' :
+                            (isExpired ? 
+                                '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700">EXPIRED</span>' : 
+                                '<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700">ACTIVE</span>')
+                        }
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button type="button" data-view-id="${r.id}" title="View Card" class="view-btn p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-medium transition">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button type="button" data-delete-id="${r.id}" title="Delete" class="delete-btn p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-medium transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Attach event listeners safely
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-view-id');
+                    viewRecord(id);
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-delete-id');
+                    deleteRecord(id);
+                });
+            });
+        }
+
+        // View single record from table
+        function viewRecord(id) {
+            const target = records.find(r => r.id === id);
+            if (target) {
+                loadRecordIntoCard(target);
+                switchTab('create');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Delete record from LocalStorage
+        function deleteRecord(id) {
+            if (confirm(`Are you sure you want to delete warranty record ${id}?`)) {
+                records = records.filter(r => r.id !== id);
+                localStorage.setItem('azhar_service_records', JSON.stringify(records));
+                renderRecordsTable();
+                
+                if (currentRecord && currentRecord.id === id) {
+                    if (records.length > 0) {
+                        loadRecordIntoCard(records[0]);
+                    } else {
+                        createSamplePreview();
+                    }
+                }
+                showToast('Record deleted successfully.');
+            }
+        }
+
+        // Utility helper to prevent HTML Injection
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        // Switch Between Navigation Tabs
+        function switchTab(tabName) {
+            const createTab = document.getElementById('createTab');
+            const trackerTab = document.getElementById('trackerTab');
+            const navCreateBtn = document.getElementById('navCreateBtn');
+            const navTrackerBtn = document.getElementById('navTrackerBtn');
+
+            if (tabName === 'create') {
+                createTab.classList.remove('hidden');
+                trackerTab.classList.add('hidden');
+                navCreateBtn.className = 'bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow';
+                navTrackerBtn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700';
+            } else {
+                createTab.classList.add('hidden');
+                trackerTab.classList.remove('hidden');
+                navTrackerBtn.className = 'bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow';
+                navCreateBtn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-700';
+            }
+        }
+
+        // Helper Utility Functions
+        function formatDate(d) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function resetForm() {
+            document.getElementById('serviceForm').reset();
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = todayStr;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Export Data Backup to JSON
+        function exportData() {
+            if (records.length === 0) {
+                alert('No record data available to export.');
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `azhar_service_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('Backup downloaded successfully!');
+        }
+
+        // Import Data Restore from JSON file
+        function importData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedRecords = JSON.parse(e.target.result);
+                    if (Array.isArray(importedRecords)) {
+                        records = importedRecords;
+                        localStorage.setItem('azhar_service_records', JSON.stringify(records));
+                        renderRecordsTable();
+                        if (records.length > 0) loadRecordIntoCard(records[0]);
+                        showToast('Data restored successfully!');
+                    } else {
+                        alert('Invalid backup file format.');
+                    }
+                } catch (err) {
+                    alert('Failed to import data file.');
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        }
+
+        function createSamplePreview() {
+            const now = new Date();
+            const sampleExpiry = new Date(now.getTime() + (90 * 24 * 60 * 60 * 1000));
+            const sample = {
+                id: 'AS-2026-1001',
+                custName: 'Sample Customer',
+                custPhone: '7003248219',
+                appliance: 'AC (Air Conditioner)',
+                model: 'Voltas 1.5 Ton Split',
+                serviceDesc: 'Full PCB Repairing and R32 Gas Refilling',
+                cost: 2450,
+                warrantyDays: 90,
+                tech: 'Azharuddin',
+                issueDateIso: now.toISOString(),
+                expiryDateIso: sampleExpiry.toISOString()
+            };
+            loadRecordIntoCard(sample);
+        }
+    </script>
+</body>
+</html>
